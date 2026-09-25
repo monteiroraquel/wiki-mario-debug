@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wiki Mario Debug</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+body{margin:0}
+:root{
+  --bg:#f3f6fb; --surface:#ffffff; --surface-2:#eaf0fa; --ink:#18203a; --muted:#56627d;
+  --line:#d9e1ee; --accent:#2c5bd0; --accent-soft:#e3ebfd; --sky:#5c94fc;
+  --brick:#b53120; --coin:#e0a800;
+  --easy:#1f8a4c; --easy-bg:#e2f5ea; --mid:#a86400; --mid-bg:#fdf0d8; --hard:#c0321f; --hard-bg:#fde6e2;
+  --code-bg:#eef2f9;
+  --pixel:"Press Start 2P", ui-monospace, monospace;
+  --sans:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0e1321; --surface:#151c2e; --surface-2:#1b2439; --ink:#e4e9f4; --muted:#9aa5bd;
+    --line:#29334b; --accent:#86a9ff; --accent-soft:#1e2a4a; --sky:#5c94fc;
+    --brick:#e0634f; --coin:#f2c230;
+    --easy:#5fd08f; --easy-bg:#15301f; --mid:#f0b453; --mid-bg:#33260f; --hard:#ff8a76; --hard-bg:#3a1a15;
+    --code-bg:#1b2439;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0e1321; --surface:#151c2e; --surface-2:#1b2439; --ink:#e4e9f4; --muted:#9aa5bd;
+  --line:#29334b; --accent:#86a9ff; --accent-soft:#1e2a4a; --sky:#5c94fc;
+  --brick:#e0634f; --coin:#f2c230;
+  --easy:#5fd08f; --easy-bg:#15301f; --mid:#f0b453; --mid-bg:#33260f; --hard:#ff8a76; --hard-bg:#3a1a15;
+  --code-bg:#1b2439;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.6}
+a{color:var(--accent)}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--sky);color:#fff;
+  border-bottom:4px solid var(--brick)}
+.topbar-in{max-width:1180px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{font-family:var(--pixel);font-size:12px;letter-spacing:.04em;color:#fff;text-decoration:none;line-height:1.5;
+  text-shadow:2px 2px 0 rgba(0,0,0,.35)}
+.brand small{display:block;font-family:var(--sans);font-size:12px;letter-spacing:0;text-shadow:none;opacity:.9;font-weight:500}
+.search{margin-left:auto;flex:1 1 220px;max-width:320px}
+.search input{width:100%;padding:8px 12px;border-radius:6px;border:2px solid rgba(0,0,0,.15);font:inherit;font-size:14px;
+  background:#fff;color:#18203a}
+
+.wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:24px 64px;display:grid;grid-template-columns:240px minmax(0,1fr);gap:32px}
+@media (max-width:820px){.wrap{grid-template-columns:1fr;gap:16px}}
+
+nav.side{position:sticky;top:96px;align-self:start;max-height:calc(100vh - 120px);overflow:auto;font-size:14px}
+@media (max-width:820px){nav.side{position:static;max-height:none}}
+.side h3{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:18px 0 6px;font-weight:600}
+.side h3:first-child{margin-top:0}
+.side ul{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.side a{display:flex;gap:8px;align-items:baseline;padding:5px 8px;border-radius:5px;text-decoration:none;color:var(--ink)}
+.side a:hover{background:var(--surface-2)}
+.side a.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.side .n{font-family:var(--mono);font-size:12px;color:var(--muted);min-width:22px;font-variant-numeric:tabular-nums}
+.side a.on .n{color:var(--accent)}
+.dot{width:8px;height:8px;border-radius:2px;flex:none;align-self:center}
+.dot.easy{background:var(--easy)}.dot.mid{background:var(--mid)}.dot.hard{background:var(--hard)}
+.side .empty{color:var(--muted);padding:5px 8px;font-size:13px}
+.mobile-nav{display:none}
+@media (max-width:820px){
+  nav.side{display:none}
+  .mobile-nav{display:block}
+  .mobile-nav select{width:100%;padding:9px 10px;font:inherit;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+}
+
+article{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:28px 32px 36px;min-width:0}
+@media (max-width:600px){article{padding:20px 18px 28px}}
+.crumbs{font-size:13px;color:var(--muted);margin-bottom:8px}
+.crumbs a{color:var(--muted)}
+h1{font-size:28px;line-height:1.25;margin:0 0 6px;text-wrap:balance;font-weight:700}
+.lede{color:var(--muted);margin:0 0 20px;max-width:65ch}
+h2{font-size:19px;margin:30px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line);text-wrap:balance}
+p,li{max-width:68ch}
+ul.plain{padding-left:20px;margin:8px 0}
+ul.plain li{margin:4px 0}
+code{font-family:var(--mono);font-size:.88em;background:var(--code-bg);padding:1px 5px;border-radius:4px}
+pre{font-family:var(--mono);font-size:13px;background:var(--code-bg);padding:14px 16px;border-radius:6px;overflow-x:auto;line-height:1.55;margin:10px 0}
+pre code{background:none;padding:0}
+
+.infobox{float:right;width:260px;margin:0 0 16px 24px;border:1px solid var(--line);border-radius:6px;overflow:hidden;font-size:13.5px;background:var(--surface)}
+@media (max-width:720px){.infobox{float:none;width:100%;margin:0 0 18px}}
+.infobox .ib-head{background:var(--sky);color:#fff;font-family:var(--pixel);font-size:10px;padding:10px 12px;letter-spacing:.04em;line-height:1.6}
+.infobox dl{margin:0;display:grid;grid-template-columns:auto 1fr}
+.infobox dt,.infobox dd{padding:7px 12px;border-top:1px solid var(--line);margin:0}
+.infobox dt{color:var(--muted);font-weight:500}
+.infobox dd{text-align:right;font-variant-numeric:tabular-nums}
+
+.chip{display:inline-block;font-size:12px;font-weight:600;padding:1px 8px;border-radius:999px;white-space:nowrap}
+.chip.easy{color:var(--easy);background:var(--easy-bg)}
+.chip.mid{color:var(--mid);background:var(--mid-bg)}
+.chip.hard{color:var(--hard);background:var(--hard-bg)}
+
+.note{border-left:3px solid var(--coin);background:var(--surface-2);padding:10px 14px;border-radius:0 6px 6px 0;margin:14px 0;max-width:68ch}
+
+ol.steps{padding-left:22px;margin:8px 0}
+ol.steps li{margin:5px 0}
+
+.hints{display:grid;gap:10px;margin-top:8px;clear:both}
+.hint{border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+.hint-top{display:flex;align-items:center;gap:12px;padding:10px 14px;flex-wrap:wrap}
+.coins{font-family:var(--pixel);font-size:10px;color:var(--coin);letter-spacing:2px}
+.hint-title{font-weight:600}
+.hint-cost{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.hint-top button{margin-left:auto}
+.hint-body{padding:0 14px 12px;border-top:1px dashed var(--line);padding-top:10px}
+.hint-body p{margin:0}
+.hint-price{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.unlock{display:flex;gap:8px;flex-wrap:wrap;padding:0 14px 12px}
+.unlock input{flex:1 1 160px;min-width:0;max-width:220px;font-family:var(--mono);font-size:14px;letter-spacing:.08em;text-transform:uppercase;padding:6px 10px;border-radius:5px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.unlock .msg{flex-basis:100%;font-size:13px;margin:0;min-height:1em}
+.unlock .msg.err{color:var(--hard)}
+.hint .tag{margin-left:auto;font-size:12px;font-weight:600;color:var(--easy)}
+button.btn{font:inherit;font-size:13px;font-weight:600;padding:6px 12px;border-radius:5px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer}
+:root[data-theme="dark"] button.btn{color:#0e1321}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) button.btn{color:#0e1321}}
+button.btn.ghost{background:transparent;color:var(--accent)}
+button.btn:disabled{cursor:not-allowed;border-color:var(--line);background:var(--surface-2);color:var(--muted)}
+.hint-actions{display:flex;justify-content:flex-end;margin-top:6px}
+
+ul.links{list-style:none;padding:0;margin:8px 0;display:grid;gap:6px}
+ul.links li{display:flex;gap:8px;align-items:baseline}
+ul.links li::before{content:"";width:6px;height:6px;background:var(--brick);flex:none;transform:translateY(-2px)}
+.host{font-family:var(--mono);font-size:12px;color:var(--muted)}
+
+.tablewrap{overflow-x:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:none}
+th{background:var(--surface-2);font-weight:600;font-size:13px}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:36px;padding-top:16px;border-top:1px solid var(--line);flex-wrap:wrap}
+.pager a{text-decoration:none;display:grid;font-size:14px;max-width:48%}
+.pager a small{color:var(--muted);font-size:12px}
+.pager .next{text-align:right;margin-left:auto}
+
+.grid-missions{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin:12px 0}
+.mcard{display:grid;gap:4px;padding:12px 14px;border:1px solid var(--line);border-radius:6px;text-decoration:none;color:var(--ink);background:var(--surface)}
+.mcard:hover{border-color:var(--accent)}
+.mcard .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.lore{border:1px solid var(--line);border-radius:8px;background:var(--surface-2);padding:18px 20px;margin:0 0 8px}
+.lore h2{margin-top:0;border:none;padding:0}
+.lore p{margin:10px 0}
+.lore .alert{font-family:var(--pixel);font-size:11px;line-height:1.7;color:var(--brick);margin:0}
+.teams{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:12px 0}
+.team{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+.team .ico{font-size:22px;line-height:1}
+.team b{display:block;font-weight:600}
+.team small{color:var(--muted);font-size:12px}
+.keys td:first-child{white-space:nowrap}
+kbd{font-family:var(--mono);font-size:12px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:1px 6px;background:var(--surface)}
+.mcard .num{font-family:var(--pixel);font-size:10px;color:var(--muted)}
+.mcard b{font-weight:600;line-height:1.35}
+.mcard .file{font-family:var(--mono);font-size:12px;color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.mcard,.side a{transition:background .12s,border-color .12s}}
+</style>
+
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="#inicio">MARIO DEBUG<br>CHALLENGE<small>Wiki das missões · Liga Acadêmica</small></a>
+    <div class="search"><input id="q" type="search" placeholder="Buscar missão, arquivo ou conceito…" aria-label="Buscar na wiki"></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <nav class="side" aria-label="Navegação da wiki" id="side"></nav>
+  <div>
+    <div class="mobile-nav"><label for="msel" class="crumbs">Ir para</label><select id="msel"></select></div>
+    <article id="page"></article>
+  </div>
+</div>
+
+<script>
+const LEVEL = {
+  easy:{label:"Fácil",pts:10},
+  mid:{label:"Médio",pts:20},
+  hard:{label:"Difícil",pts:35}
+};
+const PRECO = [2,4,6];
+const ENC = {"1":[{"s":"g/UZZZXUv487omqOvb3vSA==","i":"G0bRzdxtB6CHF76G","c":"34Zmw2ybF/ecMdH9i+Mbf80M+44KqbMq3Kd4hnSHkzvADQMm7Y74EcZU1q2MNTyMJfY3rz9x+9oyerAKazqykNLaLldtpiONc/49pY8o6SYrE3fy3jBV/H6WU4gElA94c5xpRiR/xvGBe2ktAkFvs1AO4eA7E1IcMSNqAwv3NB4yN2fHfV/vMHHp10d9T0sPSmtUWA==","n":150000},{"s":"p9D9Uk+Ns4Gr2ko42BWFJg==","i":"W3saY2aJfUKFg5Dc","c":"+2O1+r2dqWVKtHU3HgRakinoE7V75ksTCAUMbn6r8+9slDXiRtDfrlFkNKhPHqBPJAbLdvJt6EUGCU0QkDLid1fQSSX0INNqgYbXUltAeJXd5y6FVlFWmU1iSJZeJka4t4R+ZMV3AyuHfA3tcCDlcEzrzXzEZ5ha3zb11GyBzNfaVkCH5fqV/I8j7EsPBMZIl01ehe1mtifHlRRnfl7QzoDaLUxVeOcjntuLt8INhRgzuu/X6Drl0w==","n":150000},{"s":"fu9w2RcJTE8aGPa9kGLByQ==","i":"8urhEOs7F3s8H3xT","c":"8jJ7jz2ZhaluqYjCtKUaJUEgSCEyhMExAmTUzVYr5r7iNA01kDg4IJYRpQzGaM0vjKlbLNZXGjcwyXDTG0DYAQsaFjV9XBuTn5+XTTis7goqGChpgmbttZkYzMD2mkRqGkmWAjXh9OrX6sD1LBI4L/QXWfvRkca4/A==","n":150000}],"2":[{"s":"bC7YiZAji3qGTwzEIDwCKg==","i":"g0gk/OuyqS4w10mG","c":"2Fw6TWknlsu2rwrOHoSuR56i4vH29a/M/YwemryusFuhwOOhlTHAeLfMHOqXbTtD81BpKkQbO/oqm7B5jgVIYsWzJ2kKSqc4jVByZJa3fR4frgDHKxmHGlm5dtMowEYXwqqSu08dbn9uYjkRNLNX7FOJBDt2CMvknvHQ59wSSA1/Y+TLnaQmMnQAGfVyaQPJL5V2jki/gm56TB0lwHQhuQUqURE=","n":150000},{"s":"XMMRRypG3DSNZnbqpcaxAA==","i":"xcZiWoZXf7WxJCjK","c":"Twg5kskK2+I+C4UWe6JV2QRY7BAbEGsfbn3dLGmjDCvc61IGgjkY575kUybXJw4XiaBX7E+KMcypfj8hqaUcUCQ7OOERNsQZygmbpP+LlsMdaEepkkA53pca/Qx4gB1dBrswkbwVOD2ytZYSY9gkcSXqMOoSWR5OiBiOtAATopxEKNXgGCM9K+c8jQt6kwEqbANIJ4XrmL5TslgmGYZ7aM9psA2AON2W2xGhvWsN2wTZtkfofnfq89VQWVCdB1UA8lowEch71boYYv9cuvASwz/68/QFPm7BFqBfhXIRYTM=","n":150000},{"s":"p2+ws5mY9XWQqxSLbhHV8A==","i":"pO0kkJE9zKeQmU8Q","c":"NIy5PQcG3h5xGs3K2N9z+k1eCJx31Gy5C92I/w1ZGYXHgpmHCicgDqYcTMl2nEmDj8oWz5KgtuNMQ5KMCijWPo8dZ0WrawyG+Uq+25AZs769LTxz17N7JmdqdSPfoRJ93hCQXUcn8ziDvRnjCoOBvqxgaeZBI2XCk4pztaz4evulsmNJhqXedgN0iVM2YqCojw==","n":150000}],"3":[{"s":"bY7Xcoqv/eLTf8AeW8SWuQ==","i":"mFd9eRzlR20m8DbE","c":"iZJUgH+A/YpdHJqmRRb9lV5gjURkW67HPs37IwwXUalYA/uh5GhPmq6dY/Ho8LURsONRp57JiXbAxO2B9wbGYezPyed44fZKQe7SsMfJen+DC1bXOdzIkGSrcqfVrgcFQ7Lb65m8yCA8FMDaXjuw8o3JcDfaUNI=","n":150000},{"s":"gkbFbmE+vMy/55xAHehIyw==","i":"LBT63stFpxr983hV","c":"A42YSfrUnalkcPRqPqRHIPRJRV99hrTOSuD1n6twY+pFcWLg2N+g8TcW6pEL4m3yuj394HbipKXFYv75SeZnJokBK8LFse54Ut/sXzysbfXMxDyPG+ugs8yXYsDo1LquMo6EXGbWI2/3SVT8D1p7Ppw9JOFfOqe9mkNvn06/EXMp9YnzHS8/SM4ybp6mLmd0N9MAYz5Gb8Fd+uQse5CS8Lydm2yqW2NWpI43nT6pPn+bU7p3Drv5m43PUhD/imP/GlloDF4SymiYblCN","n":150000},{"s":"BthPgMKRA1vW0QmLVFRPJg==","i":"5heVXoSNYAQlVG4n","c":"XVyH1kPIa7+MCF/dDtXye0YR/wTqYImBRJc7C7PfvWzRZFs7ws0Ajc/zGhRR/l4hs/1t+Qkj8EmZNqZARBm2Z+FF5MwNFvJlFyvbF462IH2KalqtxitKRKKZik1YMnmv/E4stJzOQn2X3lSO7q8QZsKni3G1WCh5OZfZ65Z8","n":150000}],"4":[{"s":"yk6+6cOnSppt8OV+kNEoaA==","i":"BA4tYfIDEE1/3bkC","c":"Py0gcLxGbO0Orngk8RF62JtfT+o+vdBwJU/p63WmEG6vSWs14TMPQCHR116wfwNSCUIE1fLN5DYCFgdsxuJSY+qyFKwrUglqojm/ZKBfDjHuL977ZybgLxsF/WGtB8fx9HuRaczIa0ResBw2Isv0bhjUdR7OQBU=","n":150000},{"s":"aAKFrBOIikk2g95jX13csw==","i":"66zT6ZhLNRAYJwBC","c":"xD+ksjzwm7h2WkCeF4Ik3KkOEogXu6cFP0r0+iD8gp5yVhlS0VH5Wo8d9izy1EbGcN6x5Wla94uANiZDLhqRyYy5CFL0Hv21FPhW/HH3VWWWikC9guL+DyRBmy8Hu9eM+ltAPaQLvXTEOGgDC6oGy74Ku2qvFh2gIpmycnGl2hMkxwlY53KfdDZ8vMDiisaxTmRtagwDcmuXNHLYdZFgm4nVutfOVdIpimd5VfwIFzLhUrRyB3Rr9hf9gTE20I+rxgAIlcnZPfAE+NfFRFz6tKYrQbA/","n":150000},{"s":"SGGSoV3vMJu1tdoZ9Pa3zg==","i":"iKrt76Emg5hfntSV","c":"wNj1kAYX1xKq0VWr63FEEP5tGVwiO9Uh+ZI5vslt1Wxw7q3BdCiBDSALEHvsVuVpJlL8EspIHrN0njUiC0FPqgFjLM6Y8L0+DvUPrAkqPOGUMjnpTzPLA+ZNmCldrBG/sqAije/PRNxVn2+uxk2hHq2pepR7nn/difeL9JBQ4JPUrGdg3OKxwFovVltd28Y=","n":150000}],"5":[{"s":"DNvkRrJqUyqj97GNMqUOVw==","i":"VVCDjB8pblipr5v6","c":"XsI0+wRTNz3aq5dgM5WB4F4ap1MpDZZVBvsdUIs+ZUHJGuJyUSv+diioDh2CnTv4N2xDhzW/7QSJC9ijRaI61qrOJ5t3CSEs4kSoQh/0F5KxrWcY2OS079aRc1DQAZSyhxSB/nG3rOFuxW2JJ7MuMRzxDXCMbWtlUWN+Zjb7h0fCY2g2/MMyDZsbSQ2Q6Phd4pC+4LyxG0J2KbUX2rQBPdrkJoaTbV+/e1uu+H2V","n":150000},{"s":"XNJe5qP5T6h3yDFZpOk0uw==","i":"XE7/foUF8hiQvFJu","c":"cKfkUUkaLHQ912FwjgbwRhlp2pfXTpWVWV9POgYwy2LWsDRNHJl9xmA1caZ4MjRfRBP+ZO4ya+X6HSRUNXWiPqHUxbvEqSEGNWNzP7UoBraTBRadmNK7GrWq3XoTVQv3UKlFlQxABMtpg7OqIJczo0xaTT0fkfjeSugikArI4gO3bpz0fekA6IxJzc7LIwP6cw==","n":150000},{"s":"owcp7qvUsSGFtticxKAjbQ==","i":"XnozzS70MCvxMdwm","c":"xNf2iOTXVNys7J0Yce+uwrFlZmhlP8gs3RyAZf9vOYoIdcK8SIvUAWc2qLo/13T/3xamc12N++zSR5AlB3pyJv0VQZ/q6jS0us0cO3W+5jW1kLLl3d8vSrL9LDcV1Qyu63gah1rT/ZBEH/68W0e0Kc1D1ovhU4BxC3liCHLSO3+RjEjooj2habixB5RoUVEdzVClzgjbpQ==","n":150000}],"6":[{"s":"MNkL/5fh4I+KUH0dMXv61A==","i":"9l1niICchpe2gts9","c":"m2hiHy9Wi8aPRNLyoqcZcWot2wubYdUAI5pqd24SjfIHQehn6DeubsNPQLT7vfHmjDyEP4ezG4Pf/Ztod4d24HFWXtaUSPw3yLrgL9Ljn/v0BwvH9tP3DB9kb4MrZmRPFOPeZzbcd+afluw=","n":150000},{"s":"XTCn/JaqMBcBdjUuZlV3Kg==","i":"xbrdOsXEVri6z1Xt","c":"jvwmdtIl53h5sG8J/tLukNrJKdjwErL8qmO+rsGXJYFwtGFEbR0Inlms0PoIRk0p0ZTqM+ps/fYGBxIWJEtN4ZGb/i+s2GiSvO9whWVauQwlmtny/XowBTpt9vNY2SXLf+xJ2ZRVk+w8aOVcEWHdoXUuTb6uCYKv3IlDdJ09/XF0//i8QkOjC+KjaAei6nsVPJofATOB0nsRl+5bEEKN/WMbK+0ijE/PPEp9WjhvUg0=","n":150000},{"s":"NwoqpRjAzLUC87Td6Cj+Ow==","i":"nxn8PCW+dBxtrF1b","c":"45Q6/38KkH5OMy/GQwHfkV10walfSZJTcOVN2aLhdVFErpOeDvlMLVl4GQZWA860fRQuqq4HMXt5/HLSyLnk5lW/CSNG8t4rrZxgdC8r2B5nyjkfOo8SDW8WObpfyv+tNq7bhN+BRHPzqFrGwaOXR9b5JVqHnvuFxubIPoJZgNvohbkS2Sygbg==","n":150000}],"7":[{"s":"qUzi+uPPmTI24O7RgdxiCA==","i":"48Ek5XqFGiwLb7xz","c":"MFk+YMSlv45n1WL4ZHEdXdwyI1olsOVlRq0JrgOM83CBslIcLPPklf65TC8ThgdA3MIwLXvLLBq+b0UHXeDqfyJXqXWOKH+XRIwhTBZwcoplwXlA2uhrWBuzCbvyeQ08b441gWfwC0iQ7o3c","n":150000},{"s":"HYvrGqU5VQoxCqtpXJB08g==","i":"hvLc7fJQfVIyUiVA","c":"GquUaWwdpWQ7rmHzYBP2I4ryvRL7P64gFSmwPsDOm30IuaOL+XW3Q5C/G7Zh+Yrl2u/yKKfUB6/msOWCUdJp2QogXxNKTkuOu/NKn2PFjvOGOxUL+o1S+/ZGnUfQIGbAzdBv6XUx5xhJNvCqx8MHwLZN2+HJQeduNDT9N2LV90sB1g1W6gG8IVAniSVJU7r4J56y3J0TdNVf2waswfFOpeE7jCGqAxaOMlCO41W4ZZITndpkSUHPD9G6iFAd5krhOnPc5Iru0fzQP+EWD0tgcDA861VzxhR461oNq2hRxuv4DEKLV5+dzZWaHhpj5Ed3n8Ybd/Xjt6BRhQ==","n":150000},{"s":"z8hK6m93FCcQ4H/epxx5Cw==","i":"uKsYT5iVDSQKFyaW","c":"9saTAAIsA8CDhh37gK/0gzLrVbpftDHF/MWjXwIFAlXngpid6WZ5KR+7Bs5RwAMquj5TDCFUaYAygkdl9BSHStm1iHl2NXvN9/xdSiCi2hlYgNHyZzDmurI2gUZMRP9eIQ4z0dkOnYWZGWNg2syl2rjT8OMBSoXwTqh3WGgf+oQCk5Y74odGm5ifibJo0yzgFbENdGKwv57Kncdy","n":150000}],"8":[{"s":"WXssHgrTuSKadYn+I5JJ6w==","i":"MDwzgTpneyj7ECLM","c":"beCP29azFAZ+/wk5Y/NetJEwO7hAi1zAmyKA5FFQ1rcOSJuaqtc83U2f0h7ofInNL5G4U40ziiWCURhYjxT8ffZYdrIPoAGI7EyRSebOPaoFmvxpWHuEGfsJChKqNgRwjIkS2j/BUH8bvNkR0y7kpE5s1x9V3AY52w==","n":150000},{"s":"fbS8X46CD4Amz9F8YpLiPQ==","i":"B7HfkDsuTUCMoX3g","c":"Rwfn9Yads1apK+0YRykuc/nd9+DOjDkBci1F3Qyokaz1dOZj2439OBriXKLbAteIXCFlrB8vAOU3I9ClqxrDy1gPGMgi/WmUIPxrCr97U+s2yDhfRaw63d+0dCQN6+CF3cXV6byll4G5hJGYU6rz9zD7v7ZqaujhzLl+EDYLN8XUFtwsY82Wls9/s4T1/ugw5UptLbNj3ycuNxlxvsFJunRxx36566Mkv4YTzQPpZBUs3xwbya+Sq6y/3NGQycCmYgzn9ZoJbDsqcKN8m1hnnCxVLu47ldE9AOkoLNyaA9wtXGJ+sYGisPU4/Ic5Zq66yadpizYGeNbdvSdnAhGdeI+HISfWEg==","n":150000},{"s":"PfWeA4DJPRp7U8fr1DKz6Q==","i":"6t3yyIIbXXMuUM5T","c":"Gng5hMSa1GwBtEt759QmLLV3RnEEntYP3duADh8cdP9V63FEANNxsTqvoVrhzC7a5VHoP8rUpNaCsZ0UgDVH7c3zutLOUf6zHBRqHQ7ygurfFYl1V8ACu3Jtxl7Mjy7Rb30GShfoONDx+aR6dipBYac9gT/1/BkCzOX1QJSe4+FGUAZpven7IJI3C6iXKrnCazj+BoFQv/7jQyDXGR82TuJivQpXrEHyMdTRaZIi/LGyiSmvz7v8iy8nXcQWsxJWOfanNqityCkSa7hHb7qG","n":150000}],"9":[{"s":"uzE7pdIzNrrHI6F7NszuEw==","i":"SK0iP+FLzd/mxUqC","c":"EgJqoJHXBkgCIjSu1QTHYdnam5hcIK+ezqMKj5avN+P8xRqdYjb40UoiB0InAhgt1T29aniZImtHcXu2mPXXRNsF4lqnIXeUYYt8w8qiJY/UkEYdLvqPN3FVvEcP2J6Y+PDSoOy7UK2748dxPK76RyWtBJHEonKqcGBjeO7t","n":150000},{"s":"bczV9Ameqz87RnU2nNpKsA==","i":"gZ4pueb0/ISv+CbQ","c":"SPa8CxwfZ7f3gyRp76YKjfQiGT4rHgdHpnUl3HzLYdWqtUqbpJNe1JfPTz/2r8ormlQB5KAQQBqS+xVvmBcxT3A6nvZSN0eO3cG9NRe0rfUYI7ZGC0E5rNr4z0egMxUpLed/j/9PIof4xe4swPLpstDDOoOo8syMibw7CaL2LdggS43X/YxO3yte5nhuxHoMvq5pTXKosZUei1tYq+3DXqb6mEyxYVSsPo2Xu3O1JDw0r24oPmIDBI/8Ez5IO5tkZ3Pht270L82Ppshq1HL5eLoS6Sp0UxNPj1YtCYhgPlnTfjkKJ/fGo2gtIFAPq9LW8nln2g==","n":150000},{"s":"+A1tFFMN3oDhSZm91f0tFA==","i":"NO9yLcZA++ZhGEgK","c":"RLYFd7uvIGEwWIMnX10ZXJoVcKkH7YR9lbq/G3H4J+sc9bFAwzXF8xwLeUp/nx5pXR7QNllM5EN3XMzr3d1mYiUXhK/PknwcdZHiUk1hPckqyHxLSCZYqLc1973BiJIGAc1URTHwo3fMVxpepA==","n":150000}],"10":[{"s":"S0Wc+4Py2QUwEI0EajqCuQ==","i":"saqm61NQHIeMSiGn","c":"ZBwk9jx9pUFpOK74WKYwRt0Kfq4wcnADhDOApX3BHbXKtbopKvqMHSVjr6Zy22iHKoy2Ly5ewAshlNT3mjib9SP4e4Fq0vtg2xYhZ7M77BDe/8Bh8JyykmqXTNjFqVFcHbgL9CKQ65LFBgcalz2N6IKGgj+gQsI=","n":150000},{"s":"D1sGe9MifJYD0EgcCkU+zg==","i":"RPleOQTqTybq+mqF","c":"zXvUXXvT4kKEVa2jRHceTQm/hvXLWI7u0Wx+ANuw89EbN+4rGdAeu8HVwQHjT12kANHTGXrnGpmGq7DkJ8uaa5wZi6DByM8AHn+1sc0Q+vODcS5ThyiqjtaKmG0X4+qIua2TEXnLr0FPZkzMwuNbdCCWd/BJQk6UqNgAO1/qmaeF5tku1lQtiZn3LD7uoNqwsXyUHA7ZOz5Gw26lArBrYM3dRIxA33ruLgKn4FChZaR25qWh27/UnGWUIG3YbsmxPi7HWQAkipp6LFlfTOdaJH2zq1B4Zzrw+o47+/lTWxEhUcqXX18NXor3","n":150000},{"s":"teK3ClfTAwnRq99GFYKhtA==","i":"HJJHgBafy5db8YJr","c":"pVFafxzXwPOOfH1TMInsP0BmkzBT4pyayJdJ/2KpTpzwi6EvUH5tl60cBy0/bR8mklAQ1W8D7em1Q+KGwKOCxn70TCw19kvm+KFtnCNG/FjTLLkimmhCkEzpNOBTs5s+M4BPQfQnGbX54yL5b3Yq6xWOoyRssfOgvotqk6pS3j/a+MDYSNA=","n":150000}]};
+
+const M = [
+ {n:1,slug:"gravidade",title:"A gravidade está ao contrário",file:"Const.py",lvl:"easy",
+  resumo:"Depois de pular, o Mario deveria subir, parar no ponto mais alto e cair acelerando. Hoje algo empurra o Mario e os inimigos para o lado errado.",
+  repro:["Rode `python main.py` e aperte ENTER.","Aperte ↑ para pular e observe a queda.","Observe também um Goomba saindo da beira de um bloco."],
+  conceitos:["Sistema de coordenadas do pygame: o **Y cresce para baixo**.","Gravidade como uma **aceleração constante** somada à velocidade vertical a cada frame.","Onde uma constante global é usada (`Player.py`, `Entity.py`, `Goombas.py`, `Event.py`…)."],},
+ {n:2,slug:"inimigo-parede",title:"Inimigo “tremendo” na parede",file:"Entity.py",lvl:"easy",
+  resumo:"Quando um Goomba ou Koopa bate numa parede ou num cano, ele deveria virar e seguir andando para o outro lado. Hoje ele fica travado ou vibrando contra a parede.",
+  repro:["Comece a fase e ande até o primeiro cano (tubo verde).","Espere um Goomba chegar ao cano e observe o que acontece no contato."],
+  conceitos:["Herança: `Goombas`, `Koopa` e `Mushroom` herdam de `Entity`, então o movimento horizontal deles vem de `Entity.update_x_pos()`.","Colisão com `pygame.Rect.colliderect`.","Inverter a direção de um movimento é inverter o **sinal** da velocidade."],},
+ {n:3,slug:"cogumelo",title:"O cogumelo não sai do lugar",file:"Mushroom.py",lvl:"easy",
+  resumo:"Ao sair do bloco de interrogação, o cogumelo deveria andar para a direita (leste). Hoje ele fica parado em cima do bloco, sem andar para nenhum lado. O trecho de código que deveria colocá-lo em movimento está incompleto e precisa ser escrito.",
+  repro:["Pequeno (sem power-up), bata por baixo no bloco “?” que solta o cogumelo.","Espere ele terminar de subir para fora do bloco.","Observe: ele não anda para a direita nem para a esquerda."],
+  conceitos:["Herança: `Mushroom` herda de `Entity`, que começa com `self.x_vel = 0`.","`Entity.update_x_pos()` soma `x_vel` à posição a cada frame. Se `x_vel` continua 0, o objeto não se move.","A instrução `pass` não faz nada. Ela só ocupa o lugar de código que falta. Nesta missão, é preciso **escrever** o trecho que falta.","Convenção do código: `move_direction = True` = direita (`x_vel = 1`), `False` = esquerda (`x_vel = -1`). `Map.spawn_mushroom()` sempre passa `True`."],},
+ {n:4,slug:"pisar-goomba",title:"Pisar no inimigo faz o oposto do esperado",file:"Goombas.py",lvl:"mid",twin:"Goombas.py tem dois bugs: este e a missão #5.",
+  resumo:"Pular em cima de um Goomba deveria esmagá-lo sem machucar o Mario. Encostar de lado é que deveria machucar. Hoje o jogo faz o contrário.",
+  repro:["Espere o primeiro Goomba e pule **em cima** dele. Resultado: o Mario leva dano.","Agora encoste nele subindo (pulando por baixo, ou pulando no momento do contato)."],
+  conceitos:["Sinal de `y_vel` no pygame: **positivo = caindo**, **negativo = subindo**.","Para pisar num inimigo, o Mario precisa estar **caindo** no momento da colisão.","Operadores de comparação (`<`, `>`)."],},
+ {n:5,slug:"animacao-goomba",title:"A animação do Goomba congela",file:"Goombas.py",lvl:"mid",twin:"Goombas.py tem dois bugs: este e a missão #4.",
+  resumo:"O Goomba deveria mexer as perninhas para sempre enquanto anda. Hoje a imagem para de trocar depois de pouco tempo, embora ele continue andando.",
+  repro:["Deixe um Goomba andando sozinho, sem interagir.","Observe o sprite: ele alterna duas vezes e depois fica parado numa imagem."],
+  conceitos:["Animação por **contador de frames** (tick): a cada frame o contador sobe e, em certos valores, a imagem muda.","Uma animação cíclica precisa **reiniciar o contador** (ou usar o operador `%`).","Uma comparação com `==` só é verdadeira **uma vez** se o contador nunca volta."],},
+ {n:6,slug:"moedas",title:"Contador de moedas não soma",file:"Player.py",lvl:"mid",twin:"Player.py tem dois bugs: este e a missão #10.",
+  resumo:"O HUD deveria mostrar 1, 2, 3… conforme o Mario coleta moedas. Hoje o número fica parado em 0. O código que deveria somar as moedas está incompleto e precisa ser escrito.",
+  repro:["Bata em dois ou mais blocos “?” que dão moeda.","Olhe o valor abaixo de MOEDA no topo da tela: ele continua em 0."],
+  conceitos:["A instrução `pass` não faz nada. Ela só ocupa o lugar de código que falta.","Diferença entre **atribuir** (`=`) e **acumular** (`+=`).","Seguir a chamada: `Platform.spawn_bonus()` → `player.add_coins(1)`.","Comparar com um método parecido que funciona (`add_score`)."],},
+ {n:7,slug:"casco-koopa",title:"Casco chutado não sai do lugar",file:"Koopa.py",lvl:"mid",
+  resumo:"Ao chutar o casco parado do Koopa, ele deveria deslizar para longe do Mario. Hoje o casco continua parado depois do chute. O código que deveria dar velocidade ao casco está incompleto e precisa ser escrito.",
+  repro:["Chegue ao Koopa (tartaruga) e pule em cima dele: ele vira casco parado.","Encoste no casco para chutá-lo: ele soma 100 pontos, mas não se move.","Repita vindo pela esquerda e pela direita do casco."],
+  conceitos:["Máquina de estados do Koopa (comentário no arquivo): `0` andando, `1` escondido, `2` casco deslizando, `-1` morto.","A instrução `pass` não faz nada. Ela só ocupa o lugar de código que falta.","Posição relativa: `player.x - koopa.x` é **negativo** quando o Mario está **à esquerda** do casco.","A velocidade do casco deve ter o sinal **oposto** ao lado onde o Mario está. O casco é rápido: use velocidade 6 (o Koopa andando usa 1)."],},
+ {n:8,slug:"game-over",title:"O jogo nunca acaba quando o Mario perde todas as vidas",file:"Map.py",lvl:"hard",
+  resumo:"A cada morte, o Mario deveria fazer a animação de morte (com som) e, na terceira, deveria aparecer a tela FIM DE JOGO. Hoje ele volta na hora para o começo da fase, sem animação, e as vidas ficam negativas. O código que deveria tratar a morte está incompleto e precisa ser escrito.",
+  repro:["Deixe o Mario morrer (cair num buraco é o mais rápido).","Repare que ele não pula nem cai da tela: reaparece na hora no começo da fase.","Morra mais vezes e observe o contador VIDAS: ele passa de 0 e fica negativo."],
+  conceitos:["Fluxo da morte: `Map.player_death()` → `Event.start_kill(core, game_over)` → `Event.update()` (tipo 0) decide entre reiniciar a fase e ir para FIM DE JOGO.","A instrução `pass` não faz nada. Ela só ocupa o lugar de código que falta.","Um evento precisa ser **iniciado** (`start_...`) para o `Event.update()` saber o que fazer. Sem isso, o evento fica com os valores zerados e a fase reinicia na hora.","Parâmetros nomeados em Python (`game_over=True`)."],},
+ {n:9,slug:"bandeira",title:"A fase nunca termina de verdade",file:"Flag.py",lvl:"hard",
+  resumo:"Ao tocar a bandeira, ela deveria descer até a base do mastro e o Mario deveria entrar no castelo. Hoje a bandeira desce sem parar, passa do pé do mastro, some pelo chão e o jogo fica travado. O código que deveria encerrar a descida está incompleto e precisa ser escrito.",
+  repro:["Vá até o fim da fase 1-1 e toque o mastro.","Observe a bandeira passar da base do mastro e sumir.","O Mario nunca segue para o castelo."],
+  conceitos:["Fluxo da vitória: `Event.start_win()` → `Event.update()` (tipo 1) chama `flag.move_flag_down()` a cada frame **até** `flag.flag_omitted` virar `True`. Só então o Mario anda para o castelo.","A instrução `pass` não faz nada. Ela só ocupa o lugar de código que falta.","Um valor de chegada (limite) precisa ser **coerente** com as medidas reais do objeto.","Medidas em `Flag.__init__`: mastro com **304 px** de altura; a bandeira começa **16 px** abaixo do topo e tem **32 px** de altura. Ela desce 3 px por frame."],},
+ {n:10,slug:"invencibilidade",title:"O Mario fica invencível para sempre depois do primeiro dano",file:"Player.py",lvl:"hard",twin:"Player.py tem dois bugs: este e a missão #6.",
+  resumo:"Depois de perder um power-up, o Mario deveria ficar piscando e invencível só por alguns segundos. Hoje a invencibilidade nunca acaba.",
+  repro:["Pegue o cogumelo (Mario grande) e depois encoste de lado num inimigo.","Com o Mario pequeno, encoste em inimigos várias vezes por mais de 10 s. Ele nunca morre."],
+  conceitos:["**Temporizador por contador**: um valor começa alto e diminui 1 a cada frame até chegar a 0.","Onde o timer é armado: `set_powerlvl()` define `unkillable = True` e `unkillableTime = 200`.","Onde o timer deveria correr: `update_unkillable_time()`, chamado em todo `update()`.","A tabela de debug (`DebugTable.py`) mostra `inv:` na tela, útil para observar."],}
+];
+
+const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const md = s => esc(s).replace(/`([^`]+)`/g,"<code>$1</code>").replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>");
+const id = m => "missao-" + String(m.n).padStart(2,"0");
+const chip = l => `<span class="chip ${l}">${LEVEL[l].label}</span>`;
+
+// Códigos já digitados neste navegador; o texto das dicas só existe depois de decifrado
+let codes = {};
+try { codes = JSON.parse(localStorage.getItem("wiki-mario-codigos") || "{}"); } catch(e){ codes = {}; }
+const saveCodes = () => { try { localStorage.setItem("wiki-mario-codigos", JSON.stringify(codes)); } catch(e){} };
+const opened = {};
+const slotKey = (n,i) => n + "-" + (i+1);
+
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const norm = c => c.toUpperCase().replace(/[^A-Z0-9]/g, "");
+async function decrypt(slot, code){
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(norm(code)), "PBKDF2", false, ["deriveKey"]);
+  const key = await crypto.subtle.deriveKey({name:"PBKDF2", salt:b64(slot.s), iterations:slot.n, hash:"SHA-256"}, base, {name:"AES-GCM", length:256}, false, ["decrypt"]);
+  const plain = await crypto.subtle.decrypt({name:"AES-GCM", iv:b64(slot.i)}, key, b64(slot.c));
+  return new TextDecoder().decode(plain);
+}
+async function restoreCodes(){
+  for (const [k, code] of Object.entries(codes)) {
+    const [n, i] = k.split("-").map(Number);
+    try { opened[k] = await decrypt(ENC[n][i-1], code); } catch(e){ delete codes[k]; }
+  }
+  saveCodes(); render();
+}
+
+const PAGES = ["inicio","regras","codigo", ...M.map(id)];
+
+function buildNav(filter){
+  const f = (filter||"").trim().toLowerCase();
+  const match = m => !f || [m.title,m.file,m.resumo,...m.conceitos,LEVEL[m.lvl].label,"#"+m.n].join(" ").toLowerCase().includes(f);
+  const cur = current();
+  const item = (href,label,extra="") => `<li><a href="#${href}" class="${cur===href?"on":""}">${extra}<span>${label}</span></a></li>`;
+  let html = "";
+  if(!f){
+    html += `<h3>Wiki</h3><ul>${item("inicio","Página inicial")}${item("regras","Regras e pontuação")}${item("codigo","Mapa do código")}</ul>`;
+  }
+  for(const l of ["easy","mid","hard"]){
+    const list = M.filter(m=>m.lvl===l && match(m));
+    if(!list.length) continue;
+    html += `<h3>${LEVEL[l].label} · ${LEVEL[l].pts} pts</h3><ul>${list.map(m=>item(id(m),esc(m.title),`<span class="n">#${m.n}</span>`)).join("")}</ul>`;
+  }
+  if(f && !M.some(match)) html += `<p class="empty">Nenhuma missão encontrada para “${esc(filter)}”.</p>`;
+  document.getElementById("side").innerHTML = html;
+
+  const sel = document.getElementById("msel");
+  sel.innerHTML = `<option value="inicio">Página inicial</option><option value="regras">Regras e pontuação</option><option value="codigo">Mapa do código</option>` +
+    M.map(m=>`<option value="${id(m)}">#${m.n} · ${esc(m.title)}</option>`).join("");
+  sel.value = cur;
+}
+
+function current(){
+  const h = location.hash.replace("#","");
+  return PAGES.includes(h) ? h : "inicio";
+}
+
+function pageHome(){
+  return `<div class="crumbs">Wiki</div>
+  <h1>Mario Debug Challenge</h1>
+  <p class="lede">Documentação das 10 missões do desafio de debugging do Super Mario Bros. Cada página explica o bug, como reproduzi-lo, os conceitos envolvidos e as dicas compráveis.</p>
+  <section class="lore">
+    <p class="alert">O REINO COGUMELO ESTÁ EM PERIGO!</p>
+    <p>Bowser invadiu o sistema que mantém o Reino Cogumelo funcionando e espalhou bugs pelo código. Moedas deixaram de ser contabilizadas corretamente, pontuações foram alteradas, blocos pararam de reagir e até os inimigos começaram a se comportar de maneira inesperada.</p>
+    <p>Mario percebeu que não conseguiria resolver todos os problemas sozinho e convocou os maiores heróis do reino para uma missão: restaurar o jogo antes que Bowser consiga assumir o controle.</p>
+    <p>Cada equipe representa um personagem do universo Mario. Durante a competição, os participantes deverão avançar pelo Reino Cogumelo, investigar os problemas encontrados e corrigir os bugs escondidos no código.</p>
+    <p>A jornada começa com problemas simples e, conforme as equipes avançam, os desafios se tornam mais complexos. No final, os participantes chegarão ao Castelo de Bowser, onde estarão os últimos problemas do sistema.</p>
+  </section>
+  <h2>As equipes</h2>
+  <p>Cada equipe poderá representar um personagem do universo Mario. A identidade dos personagens é principalmente narrativa e visual: todas as equipes enfrentam os mesmos desafios e possuem as mesmas condições.</p>
+  <div class="teams">
+    <div class="team"><span><b>Equipe Mario</b><small>Mario</small></span></div>
+    <div class="team"><span><b>Equipe Luigi</b><small>Luigi</small></span></div>
+    <div class="team"><span><b>Equipe Peach</b><small>Peach</small></span></div>
+    <div class="team"><span><b>Equipe Yoshi</b><small>Yoshi</small></span></div>
+    <div class="team"><span><b>Equipe Toad</b><small>Toad</small></span></div>
+    <div class="team"><span><b>Equipe Daisy</b><small>Daisy</small></span></div>
+  </div>
+  <div class="note"><strong>Como funcionam as dicas.</strong> Cada missão tem 3 dicas trancadas: leve (🪙 2), média (🪙 4) e forte (🪙 6). Juntem moedas nas dinâmicas, comprem a dica com a comissão e digitem o código recebido na página da missão. As dicas são vendidas em ordem: leve, depois média, depois forte.</div>
+  <h2>Missões</h2>
+  <div class="grid-missions">${M.map(m=>`<a class="mcard" href="#${id(m)}"><span class="row"><span class="num">#${String(m.n).padStart(2,"0")}</span>${chip(m.lvl)}</span><b>${esc(m.title)}</b><span class="file">${m.file}</span></a>`).join("")}</div>
+  <h2>Como rodar o jogo</h2>
+  <pre><code>pip install pygame pytmx
+python main.py</code></pre>
+  <h2>Controles</h2>
+  <div class="tablewrap"><table class="keys">
+   <thead><tr><th>Tecla</th><th>Ação</th></tr></thead>
+   <tbody>
+    <tr><td><kbd>Enter</kbd></td><td>Começar o jogo (na tela inicial)</td></tr>
+    <tr><td><kbd>→</kbd> <kbd>←</kbd></td><td>Andar para a direita / esquerda</td></tr>
+    <tr><td><kbd>↑</kbd></td><td>Pular (segure para pular mais alto; solte cedo para um pulo baixo)</td></tr>
+    <tr><td><kbd>Shift</kbd> esquerdo</td><td>Correr. Com a flor de fogo, também atira bolas de fogo</td></tr>
+   </tbody>
+  </table></div>`;
+}
+
+function pageRegras(){
+  const rows = ["easy","mid","hard"].map(l=>{
+    const L=LEVEL[l], q=M.filter(m=>m.lvl===l).length;
+    return `<tr><td>${chip(l)}</td><td class="num">${L.pts} pts</td><td class="num">${q}</td><td class="num">${L.pts*q}</td></tr>`;
+  }).join("");
+  return `<div class="crumbs"><a href="#inicio">Wiki</a> › Regras</div>
+  <h1>Regras e pontuação</h1>
+  <p class="lede">As equipes têm 3h30 (210 minutos) para encontrar e corrigir os 10 bugs.</p>
+  <h2>Regras</h2>
+  <ol class="steps">
+   <li>Cada bug corrigido vale pontos de acordo com a dificuldade.</li>
+   <li>Cada missão já informa o arquivo onde está o bug e o que deveria acontecer no jogo.</li>
+   <li>Não é permitido reescrever o jogo do zero nem copiar a versão original do GitHub.</li>
+   <li>Cada correção deve alterar o mínimo necessário. Correções que quebram outra funcionalidade não pontuam.</li>
+   <li>Façam commits separados (ou marquem claramente) para cada bug corrigido.</li>
+   <li>No final, cada equipe demonstra os bugs corrigidos ao vivo em 2 minutos.</li>
+  </ol>
+  <div class="note"><code>Goombas.py</code> e <code>Player.py</code> têm <strong>dois bugs cada</strong>. Não parem de procurar num arquivo só porque já acharam um problema nele.</div>
+  <h2>Pontuação</h2>
+  <div class="tablewrap"><table>
+   <thead><tr><th>Dificuldade</th><th>Por bug</th><th>Qtde</th><th>Subtotal</th></tr></thead>
+   <tbody>${rows}</tbody>
+  </table></div>
+  <p><strong>Pontuação máxima: 215 pontos.</strong> Desempate pelo menor tempo total de submissão. Comprar dicas não desconta pontos.</p>
+  <h2>Dicas e moedas</h2>
+  <p>As moedas são conquistadas nas dinâmicas do evento e servem para comprar dicas com a comissão. O preço é o mesmo em todas as missões:</p>
+  <div class="tablewrap"><table>
+   <thead><tr><th>Dica</th><th>O que ajuda</th><th>Preço</th></tr></thead>
+   <tbody>
+    <tr><td>Dica 1 · leve</td><td>Um empurrão na direção certa</td><td class="num">🪙 2</td></tr>
+    <tr><td>Dica 2 · média</td><td>Aponta o trecho e o raciocínio</td><td class="num">🪙 4</td></tr>
+    <tr><td>Dica 3 · forte</td><td>Praticamente entrega a solução</td><td class="num">🪙 6</td></tr>
+   </tbody>
+  </table></div>
+  <p>Cada dica tem um código próprio. Digite o código na página da missão para abrir a dica. As dicas abertas ficam salvas neste navegador.</p>`;
+}
+
+function pageCodigo(){
+  return `<div class="crumbs"><a href="#inicio">Wiki</a> › Mapa do código</div>
+  <h1>Mapa do código</h1>
+  <p class="lede">Uma classe por arquivo. O jogo roda a 100 FPS num loop de input → update → render.</p>
+  <pre><code>main.py          cria Core e roda o loop principal
+Core.py          janela, teclado, loop (input → update → render)
+MenuManager.py   estados: MainMenu → Loading → Game
+Map.py           carrega a fase 1-1; guarda jogador, inimigos, blocos, eventos
+Event.py         eventos de morte (tipo 0) e vitória na bandeira (tipo 1)
+Const.py         constantes de física (gravidade, pulo, velocidades)
+Entity.py        classe base de inimigos e itens (movimento e colisão)
+Player.py        Mario: física, power-ups, moedas, invencibilidade
+Goombas.py       inimigo Goomba
+Koopa.py         inimigo Koopa e casco
+Mushroom.py      cogumelo de crescimento
+Flower.py        flor de fogo
+Fireball.py      bola de fogo
+Platform.py      blocos "?" e de tijolo
+Flag.py          mastro e bandeira do fim da fase
+DebugTable.py    painel de debug com estado do jogador</code></pre>
+  <h2>Onde está cada missão</h2>
+  <div class="tablewrap"><table><thead><tr><th>#</th><th>Arquivo</th><th>Missão</th><th>Dificuldade</th></tr></thead>
+  <tbody>${M.map(m=>`<tr><td class="num">${m.n}</td><td><code>${m.file}</code></td><td><a href="#${id(m)}">${esc(m.title)}</a></td><td>${chip(m.lvl)}</td></tr>`).join("")}</tbody></table></div>`;
+}
+
+function pageMissao(m){
+  const L = LEVEL[m.lvl];
+  const key = id(m);
+  const names = ["Dica 1 · leve","Dica 2 · média","Dica 3 · forte"];
+  const got = [0,1,2].filter(i => opened[slotKey(m.n,i)]).length;
+  const hints = [0,1,2].map(i=>{
+    const k = slotKey(m.n,i), txt = opened[k];
+    return `<div class="hint">
+      <div class="hint-top"><span class="coins" aria-hidden="true">${"●".repeat(i+1)}</span><span class="hint-title">${names[i]}</span><span class="hint-price">🪙 ${PRECO[i]}</span>${txt ? `<span class="tag">Desbloqueada</span>` : ""}</div>
+      ${txt ? `<div class="hint-body"><p>${md(txt)}</p></div>` : `<form class="unlock" data-slot="${k}">
+        <input id="cod-${k}" name="codigo" autocomplete="off" spellcheck="false" placeholder="XXXX-XXXX" aria-label="Código da ${names[i]}">
+        <button class="btn" type="submit">Desbloquear</button>
+        <p class="msg" aria-live="polite"></p>
+      </form>`}
+    </div>`;
+  }).join("");
+  const i = M.indexOf(m), prev = M[i-1], next = M[i+1];
+  return `<div class="crumbs"><a href="#inicio">Wiki</a> › <a href="#codigo">${L.label}</a> › Missão #${m.n}</div>
+  <aside class="infobox">
+    <div class="ib-head">MISSÃO #${String(m.n).padStart(2,"0")}</div>
+    <dl>
+      <dt>Arquivo</dt><dd><code>${m.file}</code></dd>
+      <dt>Dificuldade</dt><dd>${chip(m.lvl)}</dd>
+      <dt>Valor</dt><dd>${L.pts} pts</dd>
+      <dt>Dicas</dt><dd>🪙 ${PRECO.join(" / ")}</dd>
+      <dt>Desbloqueadas</dt><dd>${got} de 3</dd>
+    </dl>
+  </aside>
+  <h1>${esc(m.title)}</h1>
+  <p class="lede">${md(m.resumo)}</p>
+  ${m.twin ? `<div class="note">${md(m.twin)}</div>` : ""}
+  <h2>Como reproduzir</h2>
+  <ol class="steps">${m.repro.map(s=>`<li>${md(s)}</li>`).join("")}</ol>
+  <h2>Conceitos envolvidos</h2>
+  <ul class="plain">${m.conceitos.map(s=>`<li>${md(s)}</li>`).join("")}</ul>
+  <h2>Dicas</h2>
+  <p style="color:var(--muted);margin-top:0">Compre a dica com a comissão e digite o código recebido. As dicas são vendidas em ordem.</p>
+  <div class="hints">${hints}</div>
+  <div class="pager">
+    ${prev ? `<a href="#${id(prev)}"><small>← Missão anterior</small>#${prev.n} · ${esc(prev.title)}</a>` : `<a href="#inicio"><small>← Voltar</small>Página inicial</a>`}
+    ${next ? `<a class="next" href="#${id(next)}"><small>Próxima missão →</small>#${next.n} · ${esc(next.title)}</a>` : ""}
+  </div>`;
+}
+
+function render(){
+  const cur = current();
+  const page = document.getElementById("page");
+  const m = M.find(x=>id(x)===cur);
+  page.innerHTML = m ? pageMissao(m) : cur==="regras" ? pageRegras() : cur==="codigo" ? pageCodigo() : pageHome();
+  buildNav(document.getElementById("q").value);
+}
+
+document.addEventListener("submit", async e=>{
+  const f = e.target.closest("form.unlock");
+  if(!f) return;
+  e.preventDefault();
+  const k = f.dataset.slot, [n, i] = k.split("-").map(Number);
+  const input = f.querySelector("input"), msg = f.querySelector(".msg"), btn = f.querySelector("button");
+  const code = input.value.trim();
+  msg.className = "msg";
+  if(!norm(code)){ msg.textContent = "Digite o código que a comissão entregou."; msg.classList.add("err"); input.focus(); return; }
+  btn.disabled = true; msg.textContent = "Conferindo o código…";
+  try {
+    opened[k] = await decrypt(ENC[n][i-1], code);
+    codes[k] = code; saveCodes(); render();
+  } catch(err){
+    btn.disabled = false;
+    msg.textContent = "Código inválido para esta dica. Confira as letras e os números e tente de novo.";
+    msg.classList.add("err"); input.select();
+  }
+});
+window.addEventListener("hashchange", ()=>{ render(); window.scrollTo(0,0); });
+document.getElementById("q").addEventListener("input", e=>buildNav(e.target.value));
+document.getElementById("msel").addEventListener("change", e=>{ location.hash = e.target.value; });
+render();
+restoreCodes();
+</script>
+
+</body>
+</html>
